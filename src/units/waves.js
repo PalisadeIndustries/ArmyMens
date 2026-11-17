@@ -60,6 +60,42 @@ export function createDirector(ctx) {
     return pts[spawnRot++ % pts.length];
   }
 
+  // A point part-way down a random lane, well away from the player and green troops, so the opening of each
+  // wave reaches the fight quickly instead of hiking the whole yard. Falls back to a normal tan spawn.
+  function forwardSpawnPoint() {
+    const lanes = game.world?.lanes;
+    if (!lanes?.length) return tanSpawnPoint();
+    const player = ctx.player();
+    for (let tries = 0; tries < 6; tries++) {
+      const lane = lanes[Math.floor(Math.random() * lanes.length)];
+      if (!lane || lane.length < 3) continue;
+      const p = lane[Math.min(lane.length - 2, 1 + Math.floor(Math.random() * 2))];
+      if (player?.alive && Math.hypot(player.position.x - p.x, player.position.z - p.z) < 70) continue;
+      if (ctx.nearest(p.x, p.z, 40, 'green')) continue;
+      return p;
+    }
+    return tanSpawnPoint();
+  }
+
+  // Failsafe for stragglers wedged on geometry: once a wave is in mop-up, any tan soldier that has not moved 2m in
+  // ~15s is quietly moved to a forward lane point out of the player's sight, so waves never stall.
+  function unstickStragglers() {
+    const now = game.time;
+    for (const u of ctx.teamLists.tan || []) {
+      if (!u.alive) continue;
+      const st = u._stuckWatch || (u._stuckWatch = { x: u.position.x, z: u.position.z, t: now });
+      if (Math.hypot(u.position.x - st.x, u.position.z - st.z) > 2) { st.x = u.position.x; st.z = u.position.z; st.t = now; continue; }
+      if (now - st.t < 15) continue;
+      const player = ctx.player();
+      if (player?.alive && Math.hypot(player.position.x - u.position.x, player.position.z - u.position.z) < 45) { st.t = now - 10; continue; }
+      const p = forwardSpawnPoint();
+      u.position.set(p.x + (Math.random() - 0.5) * 4, p.y, p.z + (Math.random() - 0.5) * 4);
+      u.velocity?.set?.(0, 0, 0);
+      if (u.ai) { u.ai.lastX = u.position.x; u.ai.lastZ = u.position.z; u.ai.stuckT = 0; }
+      st.x = u.position.x; st.z = u.position.z; st.t = now;
+    }
+  }
+
   function spawnTanSquad(size, opts = {}) {
     const n = d.wave;
     const sp = opts.at || tanSpawnPoint();
@@ -122,9 +158,12 @@ export function createDirector(ctx) {
     const cap = waveCap(n);
     let burst = Math.min(d.toSpawn, Math.round(cap * 0.5));
     if (spec?.boss) { const sq = spawnBoss(); if (sq) { d.toSpawn -= sq.members.length; burst -= sq.members.length; } }
+    let first = true;
     while (burst > 0 && d.toSpawn > 0) {
       const sz = Math.min(d.toSpawn, squadSize(n));
-      spawnTanSquad(sz); d.toSpawn -= sz; burst -= sz;
+      // roughly half the opening burst enters part-way down the lanes so contact happens fast
+      spawnTanSquad(sz, (first || Math.random() < 0.4) ? { at: forwardSpawnPoint() } : {}); d.toSpawn -= sz; burst -= sz;
+      first = false;
     }
     d.dripT = 2;
     const title = spec?.boss ? (d.boss ? OFFICERS[(officerRot - 1) % OFFICERS.length].title : spec.title) : spec?.title || null;
@@ -199,6 +238,7 @@ export function createDirector(ctx) {
         d.forceCharge = true;
         for (const s of ctx.squads.list) if (s.team === 'tan') s.setOrder('charge');
       }
+      if (d.forceCharge) { d.unstickT = (d.unstickT || 0) - dt; if (d.unstickT <= 0) { d.unstickT = 1; unstickStragglers(); } }
       // armless stragglers just run around screaming; they don't hold the wave open
       if (d.toSpawn === 0 && (tanAlive === 0 || ctx.teamCount.tanArmed === 0)) {
         d.phase = 'intermission';

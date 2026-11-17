@@ -78,3 +78,18 @@ Update order each playing frame: world → units → player → combat → bodie
 `node tools/smoke.mjs --port <unique> --seconds 30 --shot <png>` boots headless Chromium (no pointer lock, player idle),
 prints wave/unit/corpse stats + console errors; exit code 1 on any error. Also run `npx vite build`.
 Headless uses SwiftShader, so FPS numbers are only relative.
+
+## Additions from the teams (summary — see each module's header comments for details)
+- **world**: `lanes`, `laneNames`, `spawnLanes`, `nearestLane`, `nextWaypoint`, `coverPoints {position,normal,height,collider,low}`,
+  `findCover(pos, threat, maxDist, exclude)`, `defensePoints`, `raycastDist(ox,oy,oz,dx,dy,dz,max)` (alloc-free), `getNormal`, `isBlocked`,
+  `addScorch`, `addDecal(point, normal, kind, size, color)`, `clearDecals`, `quality` (`?quality=high|low`), raycast hits carry `collider`, `surface`.
+- **units**: `grid`, `queryInto(out,x,z,r,team,exclude)`, `rayCandidates(out,origin,dir,maxDist,pad)`, `countNear`, `stats`, `objective`, `boss`,
+  `bark(unit, kind, opts)`, debug `debugSpawn(n,team,classId)`, `debugSkipToWave(n)`, `debugKillAll(team)`, `debugBoss()`. Soldier adds `name, rank, scale, squad, suppression, isBoss`.
+- **combat**: `shake`, `ignite(unit,secs,source)`, `napalm`, `useAbility(unit,{dir})`, `melee`, `friendlyFire=false`, `reset`; `raycastUnits(..., skipTeam)`;
+  damage info carries `weapon`. Unit fields `abilityCd, rallyUntil, markedUntil, markedBy, fireSource, _fireDecAt`.
+- **bodies**: `applyDamage` also returns `limbsLost[]`; `corpseCount, limbCount, stats(), severLimb, reset, fx`; debug `debugKillAll(type,team)`, `debugSpawnCorpses(n,type)`.
+- **player**: `isADS, scoped, stance, sprinting, spread, abilityName, abilityCooldown, abilityCooldownMax, cooking, grenades, killstreak, kills, autoplay (?autoplay)`, debug `debugFire/Throw/Ability/Melee/Select`.
+- **ui/audio**: `game.settings {sensitivity, volume, music, fov, voice, subtitles, invertY}`, `ui.banner/announce/toMenu/openSettings`, `audio.play/bark/unlock/setIntensity`.
+- **core**: `game.toMenu()`.
+- **events**: `wave:boss`, `wave:bossDown`, `player:hitmarker`, `player:stance/ads/cook/melee/lives/resupply`, `ability:used`, `unit:marked`,
+  `projectile:bounce`, `bullet:whizz`, `weapon:switch`, `weapon:empty`, `ui:streak`, `game:menu`, `settings:changed`.
