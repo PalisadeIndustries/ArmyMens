@@ -120,7 +120,7 @@ const BUILDERS = {
     cyl(rocket, 0.06, 0.1, 0, 0, -0.05, mats.dark, 'z', 10, 0.0);
     hand(g, 0, -0.17, 0.0, [0.1, -0.2, 0.3], 1);
     hand(g, 0, -0.16, -0.3, [-0.2, -0.16, 0.26], -1);
-    return { gun: g, muzzle: new THREE.Vector3(0, 0, -0.8), hip: new THREE.Vector3(0.25, -0.16, -0.36), ads: new THREE.Vector3(0.11, -0.06, -0.32), rocket };
+    return { gun: g, muzzle: new THREE.Vector3(0, 0, -0.8), hip: new THREE.Vector3(0.25, -0.16, -0.36), ads: new THREE.Vector3(0.15, -0.07, -0.34), rocket };
   },
   grenade() {
     const g = new THREE.Group();

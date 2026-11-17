@@ -2,6 +2,7 @@
 // Usage: node tools/smoke.mjs [--port 5180] [--seconds 20] [--class rifleman] [--shot out.png]
 // Pointer lock is unavailable headless, so the player stands still; AI armies still fight.
 import { createServer } from 'vite';
+import { canvasShot } from './body-shot.mjs';
 import { createRequire } from 'module';
 const { chromium } = createRequire(import.meta.url)('playwright'); // globally pre-installed
 
@@ -34,7 +35,7 @@ for (let t = 0; t < seconds; t += 5) {
 }
 // rough fps estimate over 2s (swiftshader is slow; relative numbers only)
 const fps = await page.evaluate(() => new Promise((r) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(n / 2); }; requestAnimationFrame(f); }));
-if (shot) await page.screenshot({ path: shot, timeout: 120000 });
+if (shot) await canvasShot(page, shot);
 console.log(JSON.stringify({ url, samples, fps, errors: errors.slice(0, 20), errorCount: errors.length }, null, 2));
 await browser.close();
 await server.close();
