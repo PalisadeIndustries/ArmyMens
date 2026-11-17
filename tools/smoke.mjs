@@ -8,7 +8,7 @@ const { chromium } = createRequire(import.meta.url)('playwright'); // globally p
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 const port = Number(arg('port', 5180)), seconds = Number(arg('seconds', 20)), cls = arg('class', 'rifleman'), shot = arg('shot', null);
 
-const server = await createServer({ server: { port, strictPort: false }, logLevel: 'error' });
+const server = await createServer({ server: { port, strictPort: false, hmr: false, watch: null }, logLevel: 'error' });
 await server.listen();
 const url = server.resolvedUrls.local[0];
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });

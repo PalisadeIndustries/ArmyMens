@@ -1,42 +1,86 @@
-import { CLASSES, CLASS_IDS } from '../core/classes.js';
+import { CSS } from './styles.js';
+import { ensureSettings } from './settings.js';
+import { createMenus } from './menu.js';
+import { createHUD } from './hud.js';
+import { createMoxie } from './moxie.js';
 
-// SKELETON UI: main menu with class select, minimal HUD, pause and game-over overlays.
-// The UI/Audio/Moxie team replaces this.
+// UI / Moxie entry point. DOM/CSS overlay on top of the WebGL canvas:
+//  main menu (toy-box title, operation name, class cards, settings), HUD, pause & game-over sheets,
+//  plus the "moxie" director (stats, killstreak announcer, radio chatter).
+// Exposes: game.ui.update(dt), game.ui.stats, game.ui.operation, game.ui.banner(text, sub, style), game.ui.announce(text, sub),
+//          game.ui.toMenu(), game.ui.openSettings(). Emits: ui:click, ui:hover, ui:stamp, ui:streak, game:menu, settings:changed.
 export function createUI(game) {
+  const settings = ensureSettings(game);
   const root = game.uiRoot;
-  root.innerHTML = `
-    <div id="menu" class="interactive" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(20,30,10,.75);color:#e8f0d0">
-      <h1 style="font-size:56px;margin:0 0 24px">PLASTIC FRONT</h1>
-      <div id="classes" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"></div>
-    </div>
-    <div id="hud" style="display:none;position:absolute;inset:0;color:#fff;text-shadow:0 1px 2px #000">
-      <div style="position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff"></div>
-      <div id="hp" style="position:absolute;left:20px;bottom:20px;font-size:28px"></div>
-      <div id="ammo" style="position:absolute;right:20px;bottom:20px;font-size:28px"></div>
-      <div id="wave" style="position:absolute;left:50%;top:16px;transform:translateX(-50%);font-size:22px"></div>
-    </div>
-    <div id="overlay" class="interactive" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;font-size:32px;cursor:pointer"></div>`;
-  const $ = (id) => root.querySelector('#' + id);
-  for (const id of CLASS_IDS) {
-    const b = document.createElement('button');
-    b.textContent = CLASSES[id].name; b.dataset.classId = id;
-    b.style.cssText = 'font-size:20px;padding:14px 22px;cursor:pointer';
-    b.onclick = () => { $('menu').style.display = 'none'; $('hud').style.display = 'block'; game.start({ classId: id }); };
-    $('classes').appendChild(b);
+  root.innerHTML = '';
+  if (!document.getElementById('pf-style')) {
+    const st = document.createElement('style'); st.id = 'pf-style'; st.textContent = CSS; document.head.appendChild(st);
   }
-  $('overlay').onclick = () => {
-    if (game.state === 'paused') { $('overlay').style.display = 'none'; game.resume(); }
-    else if (game.state === 'gameover') { $('overlay').style.display = 'none'; $('hud').style.display = 'none'; $('menu').style.display = 'flex'; game.state = 'menu'; }
+  root.style.setProperty('--pf-grunge', `url(${grungeTexture()})`);
+
+  let hud = null, moxie = null;
+  const hooks = {
+    deploy(classId) { game.start({ classId }); },
+    toMenu,
+    applySettings,
   };
-  game.events.on('game:pause', () => { $('overlay').style.display = 'flex'; $('overlay').textContent = 'PAUSED — click to resume'; });
-  game.events.on('game:over', () => { $('overlay').style.display = 'flex'; $('overlay').textContent = `GAME OVER — reached wave ${game.units.wave}. Click.`; });
-  return {
+  const menus = createMenus(game, root, hooks);
+  moxie = createMoxie(game, { streak: (...a) => hud.streak(...a) });
+  hud = createHUD(game, root, moxie);
+  // modals above HUD
+  for (const el of Object.values(menus.elements)) root.appendChild(el);
+
+  function applySettings() {
+    const cam = game.camera, pl = game.player;
+    if (!cam || pl?.scoped || pl?.isADS) return;
+    if (Math.abs(cam.fov - settings.fov) > 0.01) { cam.fov = settings.fov; cam.updateProjectionMatrix(); }
+  }
+  function toMenu() {
+    game.input?.unlock?.();
+    game.state = 'menu';
+    hud.hide(); hud.reset();
+    menus.showMenu(); menus.rerollOperation();
+    game.events.emit('game:menu', {});
+  }
+
+  const ev = game.events;
+  ev.on('game:start', () => { menus.hideAll(); hud.reset(); hud.show(); applySettings(); });
+  ev.on('player:spawn', applySettings);
+  ev.on('game:pause', () => menus.showPause(moxie.stats));
+  ev.on('game:resume', () => menus.hidePause());
+  ev.on('game:over', (info) => { menus.hidePause(); setTimeout(() => { if (game.state === 'gameover') menus.showGameOver(info, moxie.stats); }, 1200); hud.banner('MISSION FAILED', 'RETURN TO SENDER', 'danger', 2); });
+  // first user gesture: also make sure FOV matches settings
+  applySettings();
+
+  const api = {
+    get operation() { return menus.operation; },
+    get stats() { return moxie.stats; },
+    banner: (t, s, style, dur) => hud.banner(t, s, style, dur),
+    announce: (t, s) => hud.streak(t, s, true),
+    toMenu, openSettings: () => menus.openSettings(),
+    menus, hud,
     update(dt) {
-      const u = game.player?.unit;
-      if (game.state !== 'playing' || !u) return;
-      $('hp').textContent = u.alive ? `HP ${Math.ceil(u.hp)}` : `RESPAWN ${Math.max(0, game.player.respawnTimer).toFixed(1)}`;
-      const w = u.weapon; $('ammo').textContent = `${w.def.name}  ${w.ammo} / ${w.reserve}`;
-      $('wave').textContent = `WAVE ${game.units.wave} — Tan left: ${game.units.countAlive('tan')} — Lives ${game.player.lives}`;
+      if (game.state === 'playing') moxie.update(dt);
+      if (game.state !== 'menu') hud.update(dt);
     },
   };
+  return api;
+}
+
+function grungeTexture() {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, 256, 256);
+    g.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 900; i++) {
+      const r = Math.random() < 0.95 ? Math.random() * 1.6 + 0.3 : Math.random() * 5 + 2;
+      g.globalAlpha = Math.random() * 0.8 + 0.2; g.beginPath(); g.arc(Math.random() * 256, Math.random() * 256, r, 0, 7); g.fill();
+    }
+    for (let i = 0; i < 14; i++) { // scratches
+      g.globalAlpha = 0.5; g.lineWidth = Math.random() * 1.5 + 0.5; g.beginPath();
+      const x = Math.random() * 256, y = Math.random() * 256; g.moveTo(x, y); g.lineTo(x + Math.random() * 60 - 30, y + Math.random() * 60 - 30); g.stroke();
+    }
+    return c.toDataURL();
+  } catch { return ''; }
 }
