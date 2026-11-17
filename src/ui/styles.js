@@ -18,7 +18,7 @@ export const CSS = `
   linear-gradient(180deg,rgba(20,26,8,.55),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 55%,rgba(14,16,6,.92) 100%)}
 .pf-menu-top{display:flex;justify-content:space-between;align-items:flex-start;padding:26px 34px 0;gap:20px}
 .pf-boxlabel{position:relative;background:var(--card);color:var(--ink);padding:16px 26px 14px;border:5px solid var(--ink);
-  box-shadow:8px 8px 0 rgba(0,0,0,.55),inset 0 0 0 3px var(--card-d);transform:rotate(-1.5deg);max-width:640px}
+  box-shadow:8px 8px 0 rgba(0,0,0,.55),inset 0 0 0 3px var(--card-d);transform:rotate(-1.5deg);max-width:62vw}
 .pf-boxlabel:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(120,90,40,.07) 0 3px,transparent 3px 7px);pointer-events:none}
 .pf-title{font-size:min(5.6vw,96px);line-height:.86;margin:0;color:var(--olive);text-shadow:3px 3px 0 var(--olive-d);white-space:nowrap}
 .pf-title .pf-front{color:var(--red);text-shadow:3px 3px 0 var(--red-d)}
@@ -53,7 +53,7 @@ export const CSS = `
 .pf-blister{height:92px;margin:0 6px 8px;border-radius:40px 40px 12px 12px;background:radial-gradient(ellipse at 35% 20%,rgba(255,255,255,.75),rgba(255,255,255,.15) 40%,rgba(200,220,255,.12));
   border:2px solid rgba(255,255,255,.7);box-shadow:inset 0 -6px 12px rgba(0,0,0,.12);display:flex;justify-content:center;align-items:flex-end}
 .pf-blister svg{height:86px;filter:drop-shadow(2px 3px 0 rgba(0,0,0,.25))}
-.pf-card h3{margin:0;font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1;color:var(--olive-d)}
+.pf-card h3{margin:0;font-size:22px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1;color:var(--olive-d)}
 .pf-card .pf-blurb{font-family:'Courier New',monospace;font-weight:700;font-size:11.5px;margin:4px 0 6px;min-height:42px;line-height:1.2;letter-spacing:0}
 .pf-stat{display:flex;align-items:center;gap:6px;font-size:12px;margin:3px 0}
 .pf-stat b{width:52px;white-space:nowrap}
@@ -77,7 +77,7 @@ export const CSS = `
 .pf-sheet .pf-sub{font-family:'Courier New',monospace;font-weight:700;font-size:15px;margin-bottom:16px}
 .pf-sheet .pf-btnrow{margin-top:18px;flex-wrap:wrap}
 .pf-sheet .pf-bigstamp{position:absolute;right:-26px;top:-30px;border:6px double var(--red);color:var(--red);font-size:40px;padding:4px 16px;transform:rotate(12deg);background:rgba(234,220,180,.85)}
-.pf-setrow{display:grid;grid-template-columns:150px 1fr 54px;gap:12px;align-items:center;margin:10px 0;font-size:18px}
+.pf-setrow{display:grid;grid-template-columns:210px 1fr 64px;gap:12px;align-items:center;margin:10px 0;font-size:18px}
 .pf-setrow input[type=range]{accent-color:var(--olive);width:100%}
 .pf-setrow output{font-family:'Courier New',monospace;font-weight:700;text-align:right}
 .pf-setrow input[type=checkbox]{width:22px;height:22px;accent-color:var(--red)}

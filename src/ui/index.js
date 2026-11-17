@@ -73,8 +73,8 @@ function grungeTexture() {
     const g = c.getContext('2d');
     g.fillStyle = '#000'; g.fillRect(0, 0, 256, 256);
     g.globalCompositeOperation = 'destination-out';
-    for (let i = 0; i < 900; i++) {
-      const r = Math.random() < 0.95 ? Math.random() * 1.6 + 0.3 : Math.random() * 5 + 2;
+    for (let i = 0; i < 420; i++) {
+      const r = Math.random() < 0.95 ? Math.random() * 1.3 + 0.3 : Math.random() * 4 + 1.5;
       g.globalAlpha = Math.random() * 0.8 + 0.2; g.beginPath(); g.arc(Math.random() * 256, Math.random() * 256, r, 0, 7); g.fill();
     }
     for (let i = 0; i < 14; i++) { // scratches

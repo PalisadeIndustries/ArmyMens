@@ -76,7 +76,7 @@ export function createMenus(game, root, hooks) {
     card.className = 'pf-card'; card.dataset.classId = id;
     const ab = c.ability ? `<div style="margin-top:3px"><b>Q:</b> <span>${c.ability.name}</span></div>` : '';
     card.innerHTML = `<div class="pf-key">${i + 1}</div><div class="pf-blister">${soldierSVG(id)}</div>
-      <h3 class="pf-stencil">${c.name}</h3><div class="pf-blurb">${c.blurb || ''}</div>
+      <h3 class="pf-stencil"${c.name.length > 9 ? ' style="font-size:17px"' : ''}>${c.name}</h3><div class="pf-blurb">${c.blurb || ''}</div>
       <div class="pf-stat pf-stencil"><b>HP ${c.hp}</b><i style="--v:${(c.hp / maxHp * 100).toFixed(0)}%"></i></div>
       <div class="pf-stat pf-stencil"><b>SPD</b><i style="--v:${(c.speed / maxSpd * 100).toFixed(0)}%"></i></div>
       <div class="pf-weap pf-stencil">${(c.weapons || []).map((w, k) => `<div>${k ? 'SIDE' : 'MAIN'}: <span>${weaponName(w)}</span></div>`).join('')}${ab}</div>`;
