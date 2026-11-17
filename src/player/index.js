@@ -212,6 +212,7 @@ export function createPlayer(game) {
       const fov = THREE.MathUtils.lerp(baseFov, def.adsFov || baseFov, easeInOut(api.adsT)) + sprintT * 4;
       if (Math.abs(fov - lastFov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); lastFov = fov; }
       cam.updateMatrixWorld();
+      vm.eye.copy(cam.position);
 
       // ---------------- spread (radians, for firing + UI crosshair)
       const hipBase = ws.def.hipSpread ?? ws.def.spread;

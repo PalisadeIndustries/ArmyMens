@@ -176,6 +176,7 @@ export function createViewmodels(game) {
 
   const api = {
     scene, camera, models, visible: true,
+    eye: new THREE.Vector3(1e9, 1e9, 1e9), // camera position set by the player this frame (see player/index.js)
     get current() { return current; },
     set(id) {
       if (!models[id]) id = 'rifle';
@@ -257,7 +258,9 @@ export function createViewmodels(game) {
   const prev = game.scene.onAfterRender;
   game.scene.onAfterRender = function (renderer, sc, cam) {
     if (prev) prev.call(this, renderer, sc, cam);
-    if (cam !== game.camera || !api.visible || !current || game.state === 'menu') return;
+    if (cam !== game.camera || !api.visible || !current || game.state === 'menu' || game.state === 'gameover') return;
+    // only draw when the camera is where the player controller put it (debug/free cameras, menus, tools => no gun)
+    if (cam.position.distanceToSquared(api.eye) > 1.5) return;
     const ac = renderer.autoClear, ar = renderer.info.autoReset, sm = renderer.shadowMap.autoUpdate;
     renderer.autoClear = false; renderer.info.autoReset = false; renderer.shadowMap.autoUpdate = false;
     renderer.state.buffers.depth.setMask(true); // a depthWrite:false material may have left the mask off
