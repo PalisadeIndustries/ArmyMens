@@ -1,0 +1,28 @@
+{
+  "name": "armymens",
+  "version": "1.0.0",
+  "description": "Mass-combat plastic army men FPS",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PalisadeIndustries/ArmyMens.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PalisadeIndustries/ArmyMens/issues"
+  },
+  "homepage": "https://github.com/PalisadeIndustries/ArmyMens#readme",
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  },
+  "type": "module"
+}
