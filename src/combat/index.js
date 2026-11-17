@@ -331,7 +331,7 @@ export function createCombat(game) {
       if (u.zone === 'head' && def.headMul) amount *= def.headMul;
       deal(u.unit, { amount, type: 'bullet', zone: u.zone, point: u.point, dir: dir.clone(), force: def.force ?? 3, source: shooter, weapon: def.id });
       fx.impact(u.point.x, u.point.y, u.point.z, -dir.x, -dir.y, -dir.z, 'unit');
-      game.events.emit('impact', { point: u.point, normal: _e.copy(dir).negate(), kind: 'flesh', unit: u.unit, source: shooter });
+      game.events.emit('impact', { point: u.point, normal: dir.clone().negate(), kind: 'flesh', unit: u.unit, source: shooter });
       endDist = dist; lastUnitHit = true;
       if (pierce > 0) { traveled = dist + 0.05; _p.copy(origin).addScaledVector(dir, traveled); ignore = u.unit; }
     }

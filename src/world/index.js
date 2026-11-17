@@ -83,7 +83,7 @@ export function createWorld(game) {
   const atmo = createAtmosphere(game, quality);
 
   // terrain
-  const terrain = createTerrain({ extent: { minX: -100, maxX: 100, minZ: -112, maxZ: 125 }, cell: 1.25, heightFn, colorFn });
+  const terrain = createTerrain({ extent: { minX: -100, maxX: 100, minZ: -112, maxZ: 125 }, cell: quality === 'low' ? 2 : 1.25, heightFn, colorFn });
   const getHeight = terrain.getHeight;
   const detail = grassDetailTexture();
   const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, roughness: 0.96, metalness: 0 });
