@@ -73,6 +73,8 @@ export const CSS = `
 .pf-modal{display:flex;align-items:center;justify-content:center;pointer-events:auto;background:rgba(10,12,4,.72)}
 .pf-sheet{position:relative;background:var(--card);color:var(--ink);border:5px solid var(--ink);padding:26px 34px;min-width:440px;max-width:760px;
   box-shadow:10px 10px 0 rgba(0,0,0,.6)}
+.pf-sheet{max-height:96vh;overflow:auto}
+.pf-controls.pf-two{grid-template-columns:auto 1fr auto 1fr}
 .pf-sheet h2{margin:0 0 6px;font-size:56px;line-height:.95;color:var(--olive-d)}
 .pf-sheet .pf-sub{font-family:'Courier New',monospace;font-weight:700;font-size:15px;margin-bottom:16px}
 .pf-sheet .pf-btnrow{margin-top:18px;flex-wrap:wrap}

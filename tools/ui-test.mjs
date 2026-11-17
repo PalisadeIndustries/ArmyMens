@@ -31,6 +31,10 @@ await step('deploy', async () => { await page.click('.pf-deploy'); await page.wa
 await step('hud', async () => {
   await page.evaluate(() => {
     const g = window.__game, ev = g.events, me = g.player.unit;
+    const V0 = me.position.constructor, base = me.position;
+    // make sure there are soldiers to talk about, whatever the wave state
+    for (let i = 0; i < 8; i++) g.units.spawn({ team: 'tan', classId: ['rifleman', 'flamer', 'bazooka', 'sniper'][i % 4], position: new V0(base.x + 20 + i, base.y, base.z + 25) });
+    g.units.spawn({ team: 'green', classId: 'rifleman', position: new V0(base.x + 3, base.y, base.z - 3) });
     const enemies = g.units.list.filter((u) => u.team === 'tan' && u.alive);
     const friend = g.units.list.find((u) => u.team === 'green' && !u.isPlayer && u.alive);
     const V = me.position.constructor;
@@ -62,7 +66,7 @@ await step('gameover', async () => {
 });
 let backToMenu = null, afterStart = null;
 await step('tomenu', async () => {
-  await page.click('.pf-change'); await frames(2);
+  await page.evaluate(() => document.querySelector('.pf-change').click()); await frames(2);
   backToMenu = await page.evaluate(() => ({ state: window.__game.state, menuVisible: !document.getElementById('pf-menu').classList.contains('pf-hide') }));
 });
 await step('restart', async () => {

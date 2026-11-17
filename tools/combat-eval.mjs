@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 const code = readFileSync(process.argv[2], 'utf8');
-const server = await createServer({ server: { port: Number(arg('port', 5183)), strictPort: false }, logLevel: 'error' });
+const server = await createServer({ server: { port: Number(arg('port', 5183)), strictPort: false, hmr: false, watch: null }, logLevel: 'error' });
 await server.listen();
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });

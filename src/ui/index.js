@@ -32,7 +32,8 @@ export function createUI(game) {
 
   function applySettings() {
     const cam = game.camera, pl = game.player;
-    if (!cam || pl?.scoped || pl?.isADS) return;
+    // In play the player controller owns camera FOV (it should read game.settings.fov as its base).
+    if (!cam || game.state === 'playing' || pl?.scoped || pl?.isADS) return;
     if (Math.abs(cam.fov - settings.fov) > 0.01) { cam.fov = settings.fov; cam.updateProjectionMatrix(); }
   }
   function toMenu() {
@@ -44,8 +45,7 @@ export function createUI(game) {
   }
 
   const ev = game.events;
-  ev.on('game:start', () => { menus.hideAll(); hud.reset(); hud.show(); applySettings(); });
-  ev.on('player:spawn', applySettings);
+  ev.on('game:start', () => { menus.hideAll(); hud.reset(); hud.show(); });
   ev.on('game:pause', () => menus.showPause(moxie.stats));
   ev.on('game:resume', () => menus.hidePause());
   ev.on('game:over', (info) => { menus.hidePause(); setTimeout(() => { if (game.state === 'gameover') menus.showGameOver(info, moxie.stats); }, 1200); hud.banner('MISSION FAILED', 'RETURN TO SENDER', 'danger', 2); });

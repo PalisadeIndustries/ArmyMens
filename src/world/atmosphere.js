@@ -62,7 +62,7 @@ export function createAtmosphere(game, quality = 'high') {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = quality === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 
   const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 48, 24), skyMaterial());
   if (quality === 'low') sky.material.uniforms.uClouds.value = 0;
@@ -72,7 +72,7 @@ export function createAtmosphere(game, quality = 'high') {
   scene.fog = new THREE.FogExp2(FOG_COLOR.clone(), 0.0024);
 
   // Image-based lighting from the sky (no clouds so it's smooth).
-  try {
+  if (quality !== 'low') try {
     const pmrem = new THREE.PMREMGenerator(renderer);
     const envScene = new THREE.Scene();
     const envSky = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMaterial());
@@ -84,7 +84,7 @@ export function createAtmosphere(game, quality = 'high') {
     pmrem.dispose();
   } catch (e) { console.warn('[world] env map failed', e); }
 
-  const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x56663a, 0.55);
+  const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x56663a, quality === 'low' ? 1.25 : 0.55);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffd7a0, 2.9);
   sun.castShadow = true;

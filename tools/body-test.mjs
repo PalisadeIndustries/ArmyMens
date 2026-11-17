@@ -20,6 +20,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 page.setDefaultTimeout(180000);
 await page.goto(server.resolvedUrls.local[0]);
 await page.waitForFunction(() => window.__game, null, { timeout: 60000 });
+if (process.argv.includes('--only-bodies')) await page.evaluate(() => { window.__onlyBodies = true; });
 
 const log = (k, v) => console.log(k.padEnd(28), typeof v === 'string' ? v : JSON.stringify(v));
 
@@ -28,7 +29,7 @@ await page.evaluate(() => {
   const g = window.__game;
   g.start({ classId: 'rifleman' });
   g.renderer.setAnimationLoop(null); // drive the sim manually (headless GPU is far too slow for real-time)
-  window.__step = (n, dt = 1 / 60) => { for (let i = 0; i < n; i++) { g.time += dt; g.dt = dt; for (const sy of g.systems) sy?.update?.(dt); } };
+  const only = window.__onlyBodies; window.__step = (n, dt = 1 / 60) => { for (let i = 0; i < n; i++) { g.time += dt; g.dt = dt; if (only) { g.units.update(dt); g.bodies.update(dt); } else for (const sy of g.systems) sy?.update?.(dt); } };
   if (g.uiRoot) g.uiRoot.style.display = 'none';
   g.player.update = () => {};
   g.units.update = (dt) => { for (const u of g.units.list) if (u.alive && !u.isPlayer) { u.anim.phase += dt * 10; u.syncModel(dt); } for (let i = g.units.list.length - 1; i >= 0; i--) if (!g.units.list[i].alive && !g.units.list[i].isPlayer) g.units.list.splice(i, 1); };
@@ -61,7 +62,8 @@ async function measure(label, frames = 60) {
   log(label, r);
   return r;
 }
-const step = (n) => page.evaluate((n) => window.__step(n), n);
+const verbose = process.argv.includes('--verbose');
+const step = async (n) => { for (let i = 0; i < n; i += 20) { const st = await page.evaluate((k) => { window.__step(k); const g = window.__game; return { t: +g.time.toFixed(2), heap: (performance.memory?.usedJSHeapSize / 1e6) | 0, ...g.bodies.stats(), vertsPerSoldier: 0 }; }, Math.min(20, n - i)); if (verbose) console.log('  step', JSON.stringify(st).slice(0, 260)); } };
 const camTo = (x, y, z, lx, ly, lz) => page.evaluate(([x, y, z, lx, ly, lz]) => { const g = window.__game, c = g.__testCenter; g.camera.position.set(c.x + x, c.y + y, c.z + z); g.camera.lookAt(c.x + lx, c.y + ly, c.z + lz); }, [x, y, z, lx, ly, lz]);
 
 // 1) hit-zone sanity

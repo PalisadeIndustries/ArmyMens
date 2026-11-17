@@ -18,6 +18,17 @@ export function createCombat(game) {
   const _p = new THREE.Vector3(), _w = new THREE.Vector3();
   const unitScratch = [];
   const snapshot = () => { unitScratch.length = 0; const l = game.units?.list; if (l) for (let i = 0; i < l.length; i++) unitScratch.push(l[i]); return unitScratch; };
+  // Units near (x,z) via the units spatial grid when available (falls back to a full scan). Each caller passes its
+  // own scratch array so nested calls (events fired while dealing damage) can't clobber an iteration in progress.
+  const nearArrs = { explode: [], flame: [], napalm: [] };
+  function near(key, x, z, r) {
+    const out = nearArrs[key];
+    if (game.units?.queryInto) { game.units.queryInto(out, x, z, r); return out; }
+    out.length = 0; const l = game.units?.list || [];
+    for (let i = 0; i < l.length; i++) { const u = l[i]; const dx = u.position.x - x, dz = u.position.z - z; if (u.alive && dx * dx + dz * dz <= r * r) out.push(u); }
+    return out;
+  }
+  const rayArr = [];
 
   let trauma = 0, shakeT = 0, whizzCd = 0;
   const zones = []; // napalm fire zones
@@ -80,7 +91,10 @@ export function createCombat(game) {
       if (!ws || ws.cooldown > 0 || ws.reloading > 0) return false;
       const def = ws.def;
       if (shooter && !shooter.isPlayer && ws.reserve < def.mag) ws.reserve = def.reserve; // AI: endless reserve
-      if (ws.ammo <= 0) { api.reload(ws, shooter); return false; }
+      if (ws.ammo <= 0) {
+        if (!api.reload(ws, shooter) && ws.reserve <= 0 && ws.reloading <= 0) { ws.cooldown = 0.25; game.events.emit('weapon:empty', { unit: shooter, weapon: def }); }
+        return false;
+      }
       const rally = shooter?.rallyUntil > game.time;
       ws.ammo--; ws.shots = (ws.shots || 0) + 1;
       ws.cooldown = (60 / def.rpm) * (rally ? 0.75 : 1);
@@ -123,7 +137,13 @@ export function createCombat(game) {
     // Returns { unit, zone, point, dist } or null.
     raycastUnits(origin, dir, maxDist, ignore, skipTeam) {
       let best = null, bestDist = maxDist;
-      const list = game.units?.list; if (!list) return null;
+      let list = game.units?.list; if (!list) return null;
+      if (game.units.rayCandidates && maxDist < 1e5) {
+        list = game.units.rayCandidates(rayArr, origin, dir, maxDist, 1.4);
+        // the grid is rebuilt in units.update; make sure the player (moved after that) is always considered
+        const pl = game.player?.unit;
+        if (pl && pl.alive && !list.includes(pl)) list.push(pl);
+      }
       const ox = origin.x, oy = origin.y, oz = origin.z, dx = dir.x, dy = dir.y, dz = dir.z;
       for (let i = 0; i < list.length; i++) {
         const u = list[i];
@@ -152,7 +172,7 @@ export function createCombat(game) {
       }
       const force = opts.force ?? 12;
       _e.copy(p); _e.y += 0.4;
-      for (const u of snapshot()) {
+      for (const u of near('explode', p.x, p.z, radius + 1.5)) {
         if (!u.alive) continue;
         let mult = 1;
         if (u === source) mult = u.isPlayer ? 0.4 : 0.3;
@@ -260,7 +280,7 @@ export function createCombat(game) {
         if (Math.random() < 0.15 * life) fx.smoke.emit(z.p.x + rand(-z.r, z.r) * 0.6, z.p.y + 1, z.p.z + rand(-z.r, z.r) * 0.6, rand(-0.3, 0.3), rand(1.5, 2.5), rand(-0.3, 0.3), rand(2, 3), 0.8, 3, 0x2a2420, 0x6a645c, 0.45, 0.4, 0.5);
         if (z.tick <= 0) {
           z.tick = 0.25;
-          for (const u of snapshot()) {
+          for (const u of near('napalm', z.p.x, z.p.z, z.r + 0.5)) {
             if (!u.alive) continue;
             if (z.team && u.team === z.team && u !== z.owner && !api.friendlyFire) continue;
             const dx = u.position.x - z.p.x, dz = u.position.z - z.p.z;
@@ -311,6 +331,7 @@ export function createCombat(game) {
       if (u.zone === 'head' && def.headMul) amount *= def.headMul;
       deal(u.unit, { amount, type: 'bullet', zone: u.zone, point: u.point, dir: dir.clone(), force: def.force ?? 3, source: shooter, weapon: def.id });
       fx.impact(u.point.x, u.point.y, u.point.z, -dir.x, -dir.y, -dir.z, 'unit');
+      game.events.emit('impact', { point: u.point, normal: _e.copy(dir).negate(), kind: 'flesh', unit: u.unit, source: shooter });
       endDist = dist; lastUnitHit = true;
       if (pierce > 0) { traveled = dist + 0.05; _p.copy(origin).addScaledVector(dir, traveled); ignore = u.unit; }
     }
@@ -395,7 +416,8 @@ export function createCombat(game) {
     }
     // cone damage
     const cone = def.cone || 0.22, tanC = Math.tan(cone);
-    for (const u of snapshot()) {
+    const mid = reach * 0.5;
+    for (const u of near('flame', origin.x + dir.x * mid, origin.z + dir.z * mid, mid + 2.5)) {
       if (!u.alive || u === shooter || (shooter && u.team === shooter.team && !api.friendlyFire)) continue;
       _c.copy(u.position); _c.y += 0.9 * (u.crouchScale ?? 1); _c.sub(origin);
       const along = _c.dot(dir);

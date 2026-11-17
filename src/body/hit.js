@@ -42,12 +42,12 @@ function rayCapsule(o, d, maxT, ax, ay, az, bx, by, bz, r) {
 export function makeHitTester(game) {
   return function hitTest(unit, origin, dir, maxDist) {
     if (!unit || !origin || !dir) return null;
-    const p = unit.position;
-    // broad phase: sphere around the body
-    tmp.set(p.x - origin.x, p.y + 0.8 - origin.y, p.z - origin.z);
+    const p = unit.position, us = unit.scale || 1;
+    // broad phase: sphere around the body (scaled for big units)
+    tmp.set(p.x - origin.x, p.y + 0.8 * us - origin.y, p.z - origin.z);
     const along = tmp.dot(dir);
-    if (along < -2 || along > maxDist + 2) return null;
-    if (tmp.lengthSq() - along * along > 3.6) return null; // ~1.9m
+    if (along < -2 * us || along > maxDist + 2 * us) return null;
+    if (tmp.lengthSq() - along * along > 3.6 * us * us) return null; // ~1.9m
     const model = unit.model;
     let best = -1, bestZone = null;
     if (model?.bones) {
@@ -66,16 +66,17 @@ export function makeHitTester(game) {
       }
     } else {
       // analytic rig (player / modelless units): vertical capsules scaled by crouchScale; prone lies along forward
-      const cs = unit.crouchScale ?? 1, sy = Math.sin(unit.yaw || 0), cy = Math.cos(unit.yaw || 0);
-      const prone = cs < 0.45;
+      const cs = (unit.crouchScale ?? 1) * us, sy = Math.sin(unit.yaw || 0), cy = Math.cos(unit.yaw || 0);
+      const prone = (unit.crouchScale ?? 1) < 0.45;
       const L = unit.limbs || {};
       const seg = (zone, side, fwd, y0, y1, r) => {
         if (L[zone] === false) return;
         let ax, ay, az, bx, by, bz;
+        side *= us; fwd *= us; r *= us;
         const ox = p.x + cy * side, oz = p.z - sy * side; // side offset along the soldier's left (+x local)
         if (prone) {
-          ax = ox + sy * (fwd + y0 - 0.9); az = oz + cy * (fwd + y0 - 0.9); ay = p.y + 0.2;
-          bx = ox + sy * (fwd + y1 - 0.9); bz = oz + cy * (fwd + y1 - 0.9); by = p.y + 0.2;
+          ax = ox + sy * (fwd + (y0 - 0.9) * us); az = oz + cy * (fwd + (y0 - 0.9) * us); ay = p.y + 0.2 * us;
+          bx = ox + sy * (fwd + (y1 - 0.9) * us); bz = oz + cy * (fwd + (y1 - 0.9) * us); by = p.y + 0.2 * us;
         } else {
           ax = bx = ox + sy * fwd; az = bz = oz + cy * fwd; ay = p.y + y0 * cs; by = p.y + y1 * cs;
         }

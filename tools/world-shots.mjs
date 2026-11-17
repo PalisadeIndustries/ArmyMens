@@ -11,6 +11,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const VIEWS = {
   menu: null, // whatever idleUpdate shows
+  player: 'player',
   overview: { pos: [0, 120, 150], look: [0, 0, -10] },
   tanSpawn: { pos: [0, 1.6, 100], look: [0, 1.6, 60] },
   blanket: { pos: [-4, 1.6, 66], look: [4, 1, 30] },
@@ -41,6 +42,11 @@ await page.waitForTimeout(1500);
 // hide UI overlay so we see the world
 await page.addStyleTag({ content: '#ui{display:none!important}' });
 
+if (process.argv.includes('--play')) { // let a battle run first so soldiers/decals show up
+  await page.evaluate(() => window.__game.start({ classId: 'rifleman' }));
+  await page.waitForTimeout(Number(arg('wait', 60)) * 1000);
+  await page.evaluate(() => { const g = window.__game; g.renderer.setAnimationLoop(null); const p = g.player?.unit?.position; if (p) console.log('player', p.x, p.y, p.z); });
+}
 await page.evaluate(() => window.__game.renderer.setAnimationLoop(null)); // drive frames manually (swiftshader is slow)
 for (const [name, v] of Object.entries(VIEWS)) {
   if (only && !only.includes(name)) continue;
@@ -48,7 +54,7 @@ for (const [name, v] of Object.entries(VIEWS)) {
   await page.waitForFunction(() => window.__game?.world, null, { timeout: 120000 });
   const data = await page.evaluate(({ v }) => {
     const g = window.__game; g.renderer.setAnimationLoop(null);
-    if (v) { g.state = 'paused'; g.camera.position.set(...v.pos); g.camera.lookAt(...v.look); g.camera.updateMatrixWorld(); }
+    if (v === 'player') { /* keep the player's camera */ } else if (v) { g.state = 'paused'; g.camera.position.set(...v.pos); g.camera.lookAt(...v.look); g.camera.updateMatrixWorld(); }
     g.world.idleUpdate(0.016);
     g.renderer.render(g.scene, g.camera);
     return g.renderer.domElement.toDataURL('image/jpeg', 0.85);

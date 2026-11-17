@@ -135,7 +135,7 @@ export function buildProps(ctx) {
         if (row % 2 && i === n - 1) continue;
         const bx = x + ux * off, bz = z + uz * off;
         const j = (i * 7 + row * 3) % 4;
-        add(rbox(0.8, 0.46, 1.42, 0.2, 2), T(bx, gy + 0.23 + row * 0.41, bz, 0, ang + (j - 1.5) * 0.04, (j - 1.5) * 0.03), M.canvas, cols[j]);
+        add(rbox(0.8, 0.46, 1.42, 0.2, 1), T(bx, gy + 0.23 + row * 0.41, bz, 0, ang + (j - 1.5) * 0.04, (j - 1.5) * 0.03), M.canvas, cols[j]);
       }
     }
     // colliders: chunked into ~3-unit pieces
@@ -256,7 +256,7 @@ export function buildProps(ctx) {
     const col = bcols[(bseed * 5 + 3) % bcols.length];
     const y = baseY + BS / 2 + lvl * BS;
     const base = T(x, y, z, 0, rot, 0);
-    add(rbox(BS, BS, BS, 0.14, 2), base, M.plastic, col);
+    add(rbox(BS, BS, BS, 0.14, 1), base, M.plastic, col);
     for (let f = 0; f < 5; f++) {
       const g = (bseed * 3 + f * 5) % 16, u0 = (g % 4) / 4, v1 = 1 - Math.floor(g / 4) / 4;
       const pl = cached(`bl${g}`, () => atlasPlane(BS * 0.86, BS * 0.86, u0, v1 - 0.25, u0 + 0.25, v1));

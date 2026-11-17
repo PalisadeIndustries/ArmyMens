@@ -68,6 +68,14 @@ export class Game {
     this.events.emit('game:over', info);
   }
 
+  // Return to the main menu (UI shows the menu on 'game:menu').
+  toMenu() {
+    if (this.ui?.toMenu) return this.ui.toMenu();
+    this.state = 'menu';
+    this.input.unlock();
+    this.events.emit('game:menu', {});
+  }
+
   resize() {
     this.camera.aspect = innerWidth / innerHeight;
     this.camera.updateProjectionMatrix();

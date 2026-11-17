@@ -135,7 +135,7 @@ export function createWorld(game) {
 
   // grass
   const grass = createGrass(root, {
-    count: quality === 'low' ? 5000 : 14000, rand, getHeight,
+    count: quality === 'low' ? 2500 : 14000, rand, getHeight,
     extent: { minX: -98, maxX: 98, minZ: -106, maxZ: 124 },
     accept: (x, z) => {
       if (rectDist(x, z, SAND) < 1.2 || rectDist(x, z, props.blanketRect) < 0.4) return 0;
@@ -284,7 +284,8 @@ export function createWorld(game) {
       decals.add(kind, point, normal || _up, sz, color);
     },
     clearDecals() { decals.clear(); },
-    autoDecals: true,
+    autoDecals: false, // auto scorch/bullet marks from events (Combat calls addScorch/addDecal itself)
+    autoCraters: true, // crater decal under ground-level 'explosion' events
 
     update(dt) { animate(dt); },
     idleUpdate(dt) {
@@ -303,14 +304,14 @@ export function createWorld(game) {
 
   // Automatic marks from combat events (Combat can disable via world.autoDecals = false).
   game.events?.on?.('explosion', (e) => {
-    if (!api.autoDecals || !e?.point) return;
+    if (!e?.point) return;
     const r = e.radius ?? 3;
     const gy = getHeight(e.point.x, e.point.z);
-    if (e.point.y - gy < r * 0.8) {
+    if (api.autoCraters && e.kind !== 'napalm' && e.point.y - gy < r * 0.8) {
       _p.set(e.point.x, gy, e.point.z);
       decals.add('crater', _p, terrain.normalAt(e.point.x, e.point.z, _n), Math.min(6, r * 0.9), null);
     }
-    api.addScorch(e.point, r * 0.9);
+    if (api.autoDecals) api.addScorch(e.point, r * 0.9);
   });
   let impactBudget = 0;
   game.events?.on?.('impact', (e) => {

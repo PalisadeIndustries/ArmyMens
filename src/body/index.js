@@ -225,10 +225,11 @@ export function createBodies(game) {
         const joint = model.bones[B[zone]].getWorldPosition(new THREE.Vector3());
         const m = model.bones[B[zone]].matrixWorld;
         const longW = new THREE.Vector3(-m.elements[4], -m.elements[5], -m.elements[6]).normalize();
-        const ext = LIMB_EXTENT[zone] ?? 0.2;
+        const usc = model.root.scale.x || 1;
+        const ext = (LIMB_EXTENT[zone] ?? 0.2) * usc;
         const center = joint.clone().addScaledVector(longW, ext);
         const color = bodyColor(model.team, model.melt);
-        const d = spawnRigidGroup(parts, color, center, longW, ext, zone === 'head' ? 0.15 : 0.085, 'limb', model.team, null);
+        const d = spawnRigidGroup(parts, color, center, longW, ext, (zone === 'head' ? 0.15 : 0.085) * usc, 'limb', model.team, null);
         const boom = info?.type === 'explosive';
         const f = Math.min(14, (info?.force ?? 4) * (boom ? 0.9 : 0.6));
         if (dir) d.r.vel.set(dir.x * f, 0, dir.z * f);
@@ -251,6 +252,7 @@ export function createBodies(game) {
     scene.add(model.root);
     model.root.position.copy(unit.position);
     model.root.rotation.y = unit.yaw || 0;
+    if ((unit.scale || 1) !== 1) model.root.scale.setScalar(unit.scale);
     poseModel(model, unit.anim || { state: 'idle' }, 0.016, null);
     for (const z of ['head', 'larm', 'rarm', 'lleg', 'rleg']) if (unit.limbs?.[z] === false) {
       model.lost.add(z); model.bones[B[z]].scale.setScalar(1e-4);
@@ -290,7 +292,7 @@ export function createBodies(game) {
       type: 'topple', model, entry, dir: dir.clone(), axis, theta: 0,
       omega: 0.6 + Math.min(4, (info.force ?? 3) * 0.25) + (info.zone === 'head' ? 0.8 : 0),
       maxTheta: prone ? 0.0 : Math.PI / 2 - (crouch ? 0.15 : 0.02) + (Math.random() - 0.5) * 0.05,
-      lift: crouch ? 0.12 : 0.16,
+      lift: (crouch ? 0.12 : 0.16) * (model.root.scale.x || 1),
       feet: model.root.position.clone(), baseQ: model.root.quaternion.clone(), bounces: 0, t: 0,
       burning: unit.onFire > 0,
       twitch: Math.random() < 0.5 ? 0 : (Math.random() < 0.5 ? 'larm' : 'rarm'),
@@ -301,7 +303,8 @@ export function createBodies(game) {
     entry.kind = 'blown';
     const f = Math.min(16, info.force ?? 8);
     const center = new THREE.Vector3(0, 0.9, 0).applyMatrix4(model.root.matrixWorld);
-    const r = newRigid(center, model.root.quaternion, UP, 0.75, 0.17);
+    const sc = model.root.scale.x || 1;
+    const r = newRigid(center, model.root.quaternion, UP, 0.75 * sc, 0.17 * sc);
     const dir = info.dir ? _v.copy(info.dir) : _v.set(0, 0, 0);
     r.vel.set(dir.x * f * 0.9, 4 + f * 0.75 + Math.random() * 2, dir.z * f * 0.9);
     r.ang.set((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2).normalize().multiplyScalar(4 + Math.random() * 8);
@@ -327,7 +330,8 @@ export function createBodies(game) {
     const color = bodyColor(model.team, model.melt);
     const center = new THREE.Vector3(0, 0.9, 0).applyMatrix4(model.root.matrixWorld);
     const up = new THREE.Vector3(0, 1, 0).transformDirection(model.root.matrixWorld);
-    const rec = makeRecord(parts, color, center, 'corpse', model.team, up, d.type === 'melt' ? 0 : 0.75, d.type === 'melt' ? 0.35 : 0.17);
+    const sc = d.sc || model.root.scale.y || 1;
+    const rec = makeRecord(parts, color, center, 'corpse', model.team, up, d.type === 'melt' ? 0 : 0.75 * sc, (d.type === 'melt' ? 0.35 : 0.17) * sc);
     rec.entry = d.entry; d.entry.record = rec;
     bakeRecord(rec);
     scene.remove(model.root);
@@ -575,6 +579,7 @@ export function createBodies(game) {
     spawnCorpse(unit, info) { spawnCorpse(unit, info); },
     severLimb(unit, zone, info) { return severLimb(unit, zone, info); },
     fx,
+    _dyn: dyn,
     update,
     reset,
     // ---- debug / tests ----

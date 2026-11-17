@@ -186,11 +186,12 @@ export function createHUD(game, root, moxie) {
     else banner(title ? String(title).toUpperCase() : `WAVE ${wave}`, sub ? String(sub).toUpperCase() : `${enemies ?? '??'} TAN INBOUND`, 'danger');
   });
   ev.on('wave:boss', ({ title, sub }) => banner(String(title || 'BOSS').toUpperCase(), String(sub || 'BIG TOY INCOMING').toUpperCase(), 'danger', 3.2));
+  ev.on('wave:bossDown', (p) => banner('BOSS BROKEN!', `${String(p?.name || p?.title || 'THE BIG TOY').toUpperCase()} IS GOING BACK IN THE BOX`, 'clear', 2.6));
   ev.on('wave:cleared', ({ wave }) => {
     const subs = ['SWEEP UP THE ARMS', 'TAKE FIVE, TROOPER', 'THE LAWN IS OURS (FOR NOW)', 'SMELLS LIKE VICTORY. AND PLASTIC.'];
     banner(`WAVE ${wave} CLEARED`, subs[(wave || 0) % subs.length], 'clear');
   });
-  ev.on('wave:incoming', (p) => { if (p.in > 0) { incomingEnd = game.time + p.in; N.interA.textContent = p.special ? `${String(p.special.title || p.special.name || p.special).toUpperCase?.() || 'SPECIAL WAVE'} IN` : `WAVE ${p.wave ?? ''} IN`; } });
+  ev.on('wave:incoming', (p) => { if (p.in > 0) { incomingEnd = game.time + p.in; const t = p.title || p.special?.title || p.special?.name || (typeof p.special === 'string' ? p.special : null); N.interA.textContent = t ? `${String(t).toUpperCase()} IN` : `WAVE ${p.wave ?? ''} IN`; } });
   ev.on('objective:contested', ({ progress = 0, contested }) => { objT = 1.5; objProgress = progress; N.objText.textContent = contested ? 'FLAG CONTESTED!' : progress > 0.66 ? 'FLAG FALLING! GET BACK THERE!' : 'TAN ON THE FLAG!'; });
   ev.on('objective:lost', () => banner('FLAG LOST', 'THE BEIGE HAVE TAKEN THE YARD', 'danger'));
   ev.on('player:spawn', () => { spread = 0; for (const d of dmgInd) d.t = 0; });
@@ -295,7 +296,8 @@ export function createHUD(game, root, moxie) {
     spread = Math.max(0, spread - dt * (30 + spread * 6));
     if (spread > 40) spread = 40;
     const ads = !!(pl.isADS || pl.ads), scoped = !!pl.scoped;
-    const gap = ((def.spread || 0.01) * 520 + 5 + spread + speed * 1.4) * (ads ? 0.4 : 1);
+    const baseSpread = typeof pl.spread === 'number' && pl.spread > 0 ? pl.spread : (def.spread || 0.01) + speed * 0.003;
+    const gap = (baseSpread * 520 + 5 + spread) * (ads ? 0.4 : 1);
     const gapPx = Math.round(gap);
     if (C.gap !== gapPx) {
       C.gap = gapPx;

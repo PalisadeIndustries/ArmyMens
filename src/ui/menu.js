@@ -145,7 +145,7 @@ export function createMenus(game, root, hooks) {
     <div class="pf-sub pf-pauseop"></div>
     <div class="pf-stats pf-pausestats"></div>
     <div class="pf-btnrow"><button class="pf-btn pf-red pf-big pf-resume">RESUME</button><button class="pf-btn pf-psettings">SETTINGS</button><button class="pf-btn pf-ghost pf-quit">QUIT TO TOY BOX</button></div>
-    <div class="pf-sidepanel" style="position:static;width:auto;margin-top:16px;display:block"><div class="pf-controls">${CONTROLS.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div></div></div>`;
+    <div class="pf-sidepanel" style="position:static;width:auto;margin-top:16px;display:block"><div class="pf-controls pf-two">${CONTROLS.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div></div></div>`;
   root.appendChild(pause);
   $('.pf-resume', pause).onclick = () => { click(); game.resume(); };
   $('.pf-psettings', pause).onclick = () => { click(); openSettings(pause); };
@@ -164,7 +164,9 @@ export function createMenus(game, root, hooks) {
   $('.pf-change', over).onclick = () => { click(); hooks.toMenu(); };
 
   function statGrid(st, extra = true) {
-    const corpses = game.bodies?.corpses?.length ?? 0;
+    const corpses = game.bodies?.corpses?.length ?? 0, us = game.units?.stats || {};
+    st = { ...st, wavesCleared: Math.max(st.wavesCleared || 0, us.wavesCleared || 0), limbsTotal: Math.max(st.limbsTotal || 0, us.limbsLost || 0),
+      meltedTotal: Math.max(st.meltedTotal || 0, us.ignited || 0) };
     const acc = st.shots ? Math.round(Math.min(1, st.hits / st.shots) * 100) + '%' : '—';
     const items = [
       ['WAVES SURVIVED', st.wavesCleared], ['YOUR KILLS', st.kills], ['BEST STREAK', st.bestStreak],

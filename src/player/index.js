@@ -20,7 +20,7 @@ const STREAK_MILESTONES = new Set([3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
 
 export function createPlayer(game) {
   const cam = game.camera;
-  const baseFov = cam.fov || 75;
+  let baseFov = cam.fov || 75; // hip FOV; follows game.settings.fov (UI settings) every frame
   const vm = createViewmodels(game);
   const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _w = new THREE.Vector3(), _a = new THREE.Vector3();
   const _dir = new THREE.Vector3(), _muz = new THREE.Vector3(), _aim = new THREE.Vector3(), _t = new THREE.Vector3();
@@ -80,6 +80,7 @@ export function createPlayer(game) {
         grenadeWs = n > 0 ? game.combat.createWeaponState('grenade') : null;
         if (grenadeWs) { grenadeWs.ammo = 1; grenadeWs.reserve = n - 1; }
       }
+      if (game.settings?.fov) baseFov = game.settings.fov;
       unit.weaponIndex = 0;
       api.stance = 'stand'; unit.crouchScale = 1; onGround = true;
       recoilP = recoilY = kick = 0; api.adsT = 0; api.isADS = false; api.scoped = false;
@@ -92,6 +93,8 @@ export function createPlayer(game) {
     update(dt) {
       if (!unit) return;
       const inp = game.input;
+      const S = game.settings;
+      if (S?.fov > 30 && S.fov < 130) baseFov = S.fov;
       hitmarkCd -= dt;
       if (!unit.alive) { deathCam(dt); return; }
       if (inp.justPressed('Escape') || (!inp.locked && wasLocked && game.state === 'playing')) { wasLocked = false; game.pause(); return; }
@@ -104,8 +107,9 @@ export function createPlayer(game) {
       // ---------------- look
       const fovScale = cam.fov / baseFov;
       if (inp.locked) {
-        unit.yaw -= inp.mouse.dx * api.sensitivity * fovScale;
-        unit.pitch -= inp.mouse.dy * api.sensitivity * fovScale;
+        const sens = api.sensitivity * (S?.sensitivity ?? 1) * fovScale;
+        unit.yaw -= inp.mouse.dx * sens;
+        unit.pitch -= inp.mouse.dy * sens * (S?.invertY ? -1 : 1);
       }
       swayX += (-inp.mouse.dx * 0.00018 - swayX) * Math.min(1, dt * 8);
       swayY += (inp.mouse.dy * 0.00018 - swayY) * Math.min(1, dt * 8);

@@ -27,7 +27,7 @@ class Particles {
     g.setAttribute('aSize', this.aSize); g.setAttribute('aAlpha', this.aAlpha);
     g.setDrawRange(0, 0);
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
-    this.uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uScale: { value: 400 } }]);
+    this.uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uScale: { value: 400 }, uMaxSize: { value: 300 } }]);
     const mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       fog: !!fog,
@@ -35,13 +35,14 @@ class Particles {
       blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
       vertexShader: `
         attribute float aSize; attribute float aAlpha; attribute vec3 aColor;
-        uniform float uScale; varying vec4 vC;
+        uniform float uScale; uniform float uMaxSize; varying vec4 vC;
         #include <fog_pars_vertex>
         void main(){
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = aSize * uScale / max(0.1, -mvPosition.z);
+          // clamp on-screen size (fill-rate) and fade out particles right in front of the lens
+          gl_PointSize = min(aSize * uScale / max(0.1, -mvPosition.z), uMaxSize);
           gl_Position = projectionMatrix * mvPosition;
-          vC = vec4(aColor, aAlpha);
+          vC = vec4(aColor, aAlpha * clamp((-mvPosition.z - 0.25) / 0.6, 0.0, 1.0));
           #include <fog_vertex>
         }`,
       fragmentShader: additive ? `
@@ -78,8 +79,9 @@ class Particles {
     this.life[i] = life; this.maxLife[i] = life; this.s0[i] = s0; this.s1[i] = s1; this.a0[i] = a;
     this.drag[i] = drag; this.grav[i] = grav; this.size[i] = s0; this.alpha[i] = 0;
   }
-  update(dt, scaleUniform) {
+  update(dt, scaleUniform, maxSize) {
     this.uniforms.uScale.value = scaleUniform;
+    this.uniforms.uMaxSize.value = maxSize;
     let n = this.count;
     const P = this.pos, V = this.vel, L = this.life;
     for (let i = 0; i < n; i++) {
@@ -277,7 +279,8 @@ export function createFX(game) {
     update(dt) {
       const cam = game.camera;
       const scale = (game.renderer.domElement.height || innerHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
-      fire.update(dt, scale); smoke.update(dt, scale);
+      const maxPx = Math.max(64, (game.renderer.domElement.height || innerHeight) * 0.3);
+      fire.update(dt, scale, maxPx); smoke.update(dt, scale, maxPx);
 
       // tracers
       let n = tr.n;

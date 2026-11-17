@@ -22,8 +22,8 @@ await page.evaluate((type) => {
   const V = c.constructor;
   console.log('dmg', JSON.stringify(Object.keys(u.takeDamage({ amount: 999, type, zone: 'torso', dir: new V(1, 0, 0), point: c.clone(), force: 8 }))));
 }, type);
-for (let i = 0; i < 40; i++) {
-  const r = await page.evaluate(() => { const g = window.__game; for (let k = 0; k < 10; k++) { g.time += 1 / 60; g.bodies.update(1 / 60); } return JSON.stringify({ heap: (performance.memory.usedJSHeapSize / 1e6) | 0, ...g.bodies.stats(), vertsPerSoldier: 0 }); });
+for (let i = 0; i < 30; i++) {
+  const r = await page.evaluate((process_render) => { const g = window.__game; for (let k = 0; k < 10; k++) { g.time += 1 / 60; g.bodies.update(1 / 60); } const t0 = performance.now(); if (process_render) g.renderer.render(g.scene, g.camera); const rms = performance.now() - t0; return JSON.stringify({ rms, d: g.bodies._dyn.map((d) => [d.type, d.r && [d.r.pos.toArray().map((x) => +x.toFixed(2)), +d.r.age.toFixed(2)], d.t]), gt: g.time, heap: (performance.memory.usedJSHeapSize / 1e6) | 0, ...g.bodies.stats(), vertsPerSoldier: 0 }); }, i % 3 === 2);
   console.log(i, r.slice(0, 300));
 }
 await browser.close(); await server.close();
